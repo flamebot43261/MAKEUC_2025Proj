@@ -22,9 +22,11 @@ def print_response(response, operation):
 def test_user_profiles():
     print_separator("TESTING USER PROFILES CRUD")
     
-    # CREATE a new user
+    # CREATE a new user (with password)
     print("\n1. CREATE User")
     user_data = {
+        "email": "johndoe@mail.uc.edu",
+        "password": "securePassword123",
         "full_name": "John Doe",
         "university": "University of Cincinnati",
         "grad_year": 2026,
@@ -38,9 +40,11 @@ def test_user_profiles():
     print_response(response, "POST /users")
     user_id = response.json().get('id') if response.status_code == 201 else None
     
-    # CREATE another user
+    # CREATE another user (with password)
     print("\n2. CREATE Another User")
     user_data_2 = {
+        "email": "janesmith@mail.uc.edu",
+        "password": "anotherPassword456",
         "full_name": "Jane Smith",
         "university": "Ohio State University",
         "grad_year": 2025,
@@ -69,6 +73,7 @@ def test_user_profiles():
     if user_id:
         print(f"\n5. UPDATE User ({user_id})")
         updated_data = {
+            "email": "johnupdated@mail.uc.edu",
             "full_name": "John Updated Doe",
             "university": "University of Cincinnati",
             "grad_year": 2027,
@@ -88,6 +93,46 @@ def test_user_profiles():
     #     print_response(response, f"DELETE /users/{user_id}")
     
     return user_id, user_id_2
+
+# ==================== AUTHENTICATION TESTS ====================
+
+def test_authentication():
+    print_separator("TESTING AUTHENTICATION")
+    
+    # Test successful login
+    print("\n1. Test Successful Login")
+    login_data = {
+        "email": "johndoe@mail.uc.edu",
+        "password": "securePassword123"
+    }
+    response = requests.post(f"{BASE_URL}/login", json=login_data)
+    print_response(response, "POST /login (Success)")
+    
+    # Test login with wrong password
+    print("\n2. Test Login with Wrong Password")
+    wrong_password = {
+        "email": "johndoe@mail.uc.edu",
+        "password": "wrongPassword"
+    }
+    response = requests.post(f"{BASE_URL}/login", json=wrong_password)
+    print_response(response, "POST /login (Wrong Password)")
+    
+    # Test login with non-existent email
+    print("\n3. Test Login with Non-Existent Email")
+    wrong_email = {
+        "email": "nonexistent@mail.uc.edu",
+        "password": "anyPassword"
+    }
+    response = requests.post(f"{BASE_URL}/login", json=wrong_email)
+    print_response(response, "POST /login (Non-Existent Email)")
+    
+    # Test login with missing fields
+    print("\n4. Test Login with Missing Password")
+    missing_field = {
+        "email": "johndoe@mail.uc.edu"
+    }
+    response = requests.post(f"{BASE_URL}/login", json=missing_field)
+    print_response(response, "POST /login (Missing Field)")
 
 # ==================== HOUSING LISTINGS TESTS ====================
 
@@ -225,21 +270,31 @@ def test_coop_appointments(user_id, user_id_2):
 def test_error_handling():
     print_separator("TESTING ERROR HANDLING")
     
-    # Test invalid user creation (missing required field)
-    print("\n1. Test Invalid User Creation (Missing full_name)")
+    # Test invalid user creation (missing required fields)
+    print("\n1. Test Invalid User Creation (Missing email and password)")
     invalid_user = {
+        "full_name": "Test User",
         "university": "Test University"
     }
     response = requests.post(f"{BASE_URL}/users", json=invalid_user)
     print_response(response, "POST /users (Invalid)")
     
+    # Test user creation with missing password
+    print("\n2. Test User Creation (Missing password)")
+    no_password_user = {
+        "email": "test@mail.uc.edu",
+        "full_name": "Test User"
+    }
+    response = requests.post(f"{BASE_URL}/users", json=no_password_user)
+    print_response(response, "POST /users (Missing Password)")
+    
     # Test getting non-existent user
-    print("\n2. Test Getting Non-Existent User")
+    print("\n3. Test Getting Non-Existent User")
     response = requests.get(f"{BASE_URL}/users/99999")
     print_response(response, "GET /users/99999 (Not Found)")
     
     # Test invalid listing creation (missing required fields)
-    print("\n3. Test Invalid Listing Creation")
+    print("\n4. Test Invalid Listing Creation")
     invalid_listing = {
         "user_id": 1
     }
@@ -247,7 +302,7 @@ def test_error_handling():
     print_response(response, "POST /listings (Invalid)")
     
     # Test invalid coop appointment creation (missing required fields)
-    print("\n4. Test Invalid Coop Appointment Creation")
+    print("\n5. Test Invalid Coop Appointment Creation")
     invalid_appointment = {
         "owner_id": 1
     }
@@ -255,12 +310,12 @@ def test_error_handling():
     print_response(response, "POST /coop-appointments (Invalid)")
     
     # Test deleting non-existent record
-    print("\n5. Test Deleting Non-Existent Coop Appointment")
+    print("\n6. Test Deleting Non-Existent Coop Appointment")
     response = requests.delete(f"{BASE_URL}/coop-appointments/99999")
     print_response(response, "DELETE /coop-appointments/99999 (Not Found)")
     
     # Test updating non-existent record
-    print("\n6. Test Updating Non-Existent Listing")
+    print("\n7. Test Updating Non-Existent Listing")
     update_data = {
         "rotation": "Spring 2026",
         "city_to": "Boston",
@@ -278,8 +333,11 @@ def run_all_tests():
     print("🚀"*30)
     
     try:
-        # Test User Profiles
+        # Test User Profiles (with password creation)
         user_id, user_id_2 = test_user_profiles()
+        
+        # Test Authentication
+        test_authentication()
         
         # Test Housing Listings
         if user_id and user_id_2:

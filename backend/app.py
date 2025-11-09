@@ -39,9 +39,11 @@ def create_user_profile():
     data = request.get_json()
     
     # Basic validation
-    if not data or not data.get('full_name'):
-        return jsonify({'error': 'full_name is a required field'}), 400
+    if not data or not data.get('email') or not data.get('password'):
+        return jsonify({'error': 'email and password are required fields'}), 400
 
+    email = data.get('email')
+    password = data.get('password')
     full_name = data.get('full_name')
     university = data.get('university')
     grad_year = data.get('grad_year')
@@ -51,19 +53,34 @@ def create_user_profile():
     major = data.get('major')
     phone_number = data.get('phone_number')
 
-    sql = """
-        INSERT INTO "user" (full_name, university, grad_year, age, cohort, gender, major, phone_number)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    user_sql = """
+        INSERT INTO "user" (email, full_name, university, grad_year, age, cohort, gender, major, phone_number)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING *;
+    """
+    
+    password_sql = """
+        INSERT INTO passwords (user_id, password)
+        VALUES (%s, %s)
         RETURNING *;
     """
     
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute(sql, (full_name, university, grad_year, age, cohort, gender, major, phone_number))
+                # Create user first
+                cur.execute(user_sql, (email, full_name, university, grad_year, age, cohort, gender, major, phone_number))
                 new_user = cur.fetchall()
+                user_dict = result_to_dict(cur, new_user)[0]
+                user_id = user_dict['id']
+                
+                # Create password entry for the user
+                cur.execute(password_sql, (user_id, password))
+                
                 conn.commit()
-                return jsonify(result_to_dict(cur, new_user)[0]), 201
+                
+                # Return user data (without password for security)
+                return jsonify(user_dict), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -102,6 +119,7 @@ def update_user_profile(user_id):
     if not data:
         return jsonify({'error': 'Request body cannot be empty'}), 400
 
+    email = data.get('email')
     full_name = data.get('full_name')
     university = data.get('university')
     grad_year = data.get('grad_year')
@@ -113,7 +131,7 @@ def update_user_profile(user_id):
 
     sql = """
         UPDATE "user"
-        SET full_name = %s, university = %s, grad_year = %s, age = %s, cohort = %s, gender = %s, major = %s, phone_number = %s
+        SET email = %s, full_name = %s, university = %s, grad_year = %s, age = %s, cohort = %s, gender = %s, major = %s, phone_number = %s
         WHERE id = %s
         RETURNING *;
     """
@@ -121,7 +139,7 @@ def update_user_profile(user_id):
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute(sql, (full_name, university, grad_year, age, cohort, gender, major, phone_number, user_id))
+                cur.execute(sql, (email, full_name, university, grad_year, age, cohort, gender, major, phone_number, user_id))
                 updated_user = cur.fetchall()
                 conn.commit()
                 if not updated_user:
@@ -380,6 +398,52 @@ def delete_coop_appointment(appointment_id):
                 if not deleted_appointment:
                     return jsonify({'error': 'Coop appointment not found'}), 404
                 return jsonify({'message': 'Coop appointment deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# --- AUTHENTICATION ---
+
+# LOGIN - Authenticate user
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    
+    # Validation
+    if not data or not data.get('email') or not data.get('password'):
+        return jsonify({'error': 'email and password are required'}), 400
+    
+    email = data.get('email')
+    password = data.get('password')
+    
+    sql = """
+        SELECT u.*, p.password 
+        FROM "user" u
+        INNER JOIN passwords p ON u.id = p.user_id
+        WHERE u.email = %s;
+    """
+    
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql, (email,))
+                result = cur.fetchall()
+                
+                if not result:
+                    return jsonify({'error': 'Invalid email or password'}), 401
+                
+                user_data = result_to_dict(cur, result)[0]
+                stored_password = user_data.pop('password')  # Remove password from response
+                
+                # Check password match
+                if password != stored_password:
+                    return jsonify({'error': 'Invalid email or password'}), 401
+                
+                # Successful login
+                return jsonify({
+                    'message': 'Login successful',
+                    'user': user_data
+                }), 200
+                
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
