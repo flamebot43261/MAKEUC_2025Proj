@@ -4,17 +4,21 @@ import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import CreateAccountPage from './components/CreateAccountPage';
 import MyProfilePage from './components/MyProfilePage';
+import CreateProfile from './pages/CreateProfile';
 import './App.css';
 
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/create-account" element={<CreateAccountPage />} />
-        <Route path="/my-profile" element={<MyProfilePage />} />
-      </Routes>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/create-account" element={<CreateAccountPage />} />
+          <Route path="/my-profile" element={<MyProfilePage />} />
+          <Route path="/create-profile" element={<CreateProfile />} />
+        </Routes>
+      </div>
     </Router>
   );
 }
