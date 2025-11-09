@@ -1,20 +1,19 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import CreateAccountPage from './components/CreateAccountPage';
-import ClassSelectionPage from './components/ClassSelectionPage';
-import CourseDescriptionPage from './components/CourseDescriptionPage';
+import MyProfilePage from './components/MyProfilePage';
 import './App.css';
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/create-account" element={<CreateAccountPage />} />
-        <Route path="/class-selection" element={<ClassSelectionPage />} />
-        <Route path="/course-description" element={<CourseDescriptionPage />} />
+        <Route path="/my-profile" element={<MyProfilePage />} />
       </Routes>
     </Router>
   );
