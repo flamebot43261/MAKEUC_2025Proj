@@ -23,11 +23,9 @@ if DATABASE_URL:
 else:
     print("⚠ Warning: DATABASE_URL not set")
 
-
-# Define a route for the home page
 @app.route('/')
 def null_return():
-    return None
+    return jsonify({"message": "API is running", "status": "OK"}), 200
 
 def result_to_dict(cursor, result):
     columns = [desc[0] for desc in cursor.description]
@@ -50,17 +48,19 @@ def create_user_profile():
     age = data.get('age')
     cohort = data.get('cohort')
     gender = data.get('gender')
+    major = data.get('major')
+    phone_number = data.get('phone_number')
 
     sql = """
-        INSERT INTO user_profiles (full_name, university, grad_year, age, cohort, gender)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO "user" (full_name, university, grad_year, age, cohort, gender, major, phone_number)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING *;
     """
     
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute(sql, (full_name, university, grad_year, age, cohort, gender))
+                cur.execute(sql, (full_name, university, grad_year, age, cohort, gender, major, phone_number))
                 new_user = cur.fetchall()
                 conn.commit()
                 return jsonify(result_to_dict(cur, new_user)[0]), 201
@@ -70,7 +70,7 @@ def create_user_profile():
 # READ all user profiles
 @app.route('/users', methods=['GET'])
 def get_all_user_profiles():
-    sql = 'SELECT * FROM user_profiles ORDER BY created_at DESC;'
+    sql = 'SELECT * FROM "user" ORDER BY created_at DESC;'
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
@@ -83,7 +83,7 @@ def get_all_user_profiles():
 # READ a single user profile by ID
 @app.route('/users/<int:user_id>', methods=['GET'])
 def get_user_profile(user_id):
-    sql = 'SELECT * FROM user_profiles WHERE id = %s;'
+    sql = 'SELECT * FROM "user" WHERE id = %s;'
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
@@ -108,10 +108,12 @@ def update_user_profile(user_id):
     age = data.get('age')
     cohort = data.get('cohort')
     gender = data.get('gender')
+    major = data.get('major')
+    phone_number = data.get('phone_number')
 
     sql = """
-        UPDATE user_profiles
-        SET full_name = %s, university = %s, grad_year = %s, age = %s, cohort = %s, gender = %s
+        UPDATE "user"
+        SET full_name = %s, university = %s, grad_year = %s, age = %s, cohort = %s, gender = %s, major = %s, phone_number = %s
         WHERE id = %s
         RETURNING *;
     """
@@ -119,7 +121,7 @@ def update_user_profile(user_id):
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-                cur.execute(sql, (full_name, university, grad_year, age, cohort, gender, user_id))
+                cur.execute(sql, (full_name, university, grad_year, age, cohort, gender, major, phone_number, user_id))
                 updated_user = cur.fetchall()
                 conn.commit()
                 if not updated_user:
@@ -131,7 +133,7 @@ def update_user_profile(user_id):
 # DELETE a user profile by ID
 @app.route('/users/<int:user_id>', methods=['DELETE'])
 def delete_user_profile(user_id):
-    sql = 'DELETE FROM user_profiles WHERE id = %s RETURNING *;'
+    sql = 'DELETE FROM "user" WHERE id = %s RETURNING *;'
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
@@ -161,7 +163,7 @@ def create_housing_listing():
     details = data.get('details')
 
     sql = """
-        INSERT INTO housing_listings (user_id, rotation, city_to, city_from, details)
+        INSERT INTO housing_listing (user_id, rotation, city_to, city_from, details)
         VALUES (%s, %s, %s, %s, %s)
         RETURNING *;
     """
@@ -176,11 +178,10 @@ def create_housing_listing():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# READ all housing listings (with optional filtering)
+# READ all housing listings
 @app.route('/listings', methods=['GET'])
 def get_all_housing_listings():
-    # This endpoint can be used for general browsing
-    sql = 'SELECT * FROM housing_listings ORDER BY created_at DESC;'
+    sql = 'SELECT * FROM housing_listing ORDER BY created_at DESC;'
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
@@ -193,7 +194,7 @@ def get_all_housing_listings():
 # READ a single housing listing by ID
 @app.route('/listings/<int:listing_id>', methods=['GET'])
 def get_housing_listing(listing_id):
-    sql = 'SELECT * FROM housing_listings WHERE id = %s;'
+    sql = 'SELECT * FROM housing_listing WHERE id = %s;'
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
@@ -212,15 +213,13 @@ def update_housing_listing(listing_id):
     if not data:
         return jsonify({'error': 'Request body cannot be empty'}), 400
 
-    # For simplicity, this example requires all fields for an update.
-    # You could modify this to update only provided fields.
     rotation = data.get('rotation')
     city_to = data.get('city_to')
     city_from = data.get('city_from')
     details = data.get('details')
 
     sql = """
-        UPDATE housing_listings
+        UPDATE housing_listing
         SET rotation = %s, city_to = %s, city_from = %s, details = %s
         WHERE id = %s
         RETURNING *;
@@ -241,7 +240,7 @@ def update_housing_listing(listing_id):
 # DELETE a housing listing by ID
 @app.route('/listings/<int:listing_id>', methods=['DELETE'])
 def delete_housing_listing(listing_id):
-    sql = 'DELETE FROM housing_listings WHERE id = %s RETURNING *;'
+    sql = 'DELETE FROM housing_listing WHERE id = %s RETURNING *;'
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
@@ -254,7 +253,7 @@ def delete_housing_listing(listing_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# --- COOP appointmentS CRUD ---
+# --- COOP APPOINTMENTS CRUD ---
 
 # CREATE a new coop appointment
 @app.route('/coop-appointments', methods=['POST'])
@@ -470,4 +469,4 @@ def schedule_appointment_with_duration_check(new_datetime_str: str, owner_id: in
 
 # Run the application
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
