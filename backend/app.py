@@ -384,6 +384,75 @@ def delete_coop_appointment(appointment_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# --- CORE SCHEDULING LOGIC ---
+def schedule_appointment_with_duration_check(new_datetime_str: str, owner_id: int, requestor_id: int):
+    new_datetime = new_datetime_str # e.g., '2026-01-20 14:30:00+00'
+
+    try:
+        # --- QUERY 1: CHECK FOR 30-MINUTE OVERLAP CONFLICTS ---
+        check_query = """
+        SELECT 1
+        FROM coop_appointments
+        WHERE 
+            -- Check if either party is involved in the existing appointment
+            (owner_id = %s OR requestor_id = %s)
+            AND (
+                -- Overlap condition: (New Start < Existing End) AND (New End > Existing Start)
+                %s < (datetime + interval '30 minutes') 
+                AND (%s + interval '30 minutes') > datetime
+            );
+        """
+        
+        # Note: psycopg uses %s for placeholders, regardless of the data type
+        conflict_data = (
+            owner_id, 
+            requestor_id,
+            new_datetime, 
+            new_datetime
+        )
+        
+        # Execute the SELECT query
+        conflicts = execute_db_query(check_query, conflict_data, commit=False)
+
+        # --- LOGIC: PROCESS CHECK RESULT ---
+        if conflicts:
+            # Conflict found: conflicts will be a list containing at least one [1]
+            return {"error": "Conflict: The appointment conflicts with an existing appointment for the owner or requestor within the 30-minute window."}, 409
+        
+        # --- QUERY 2: INSERT NEW APPOINTMENT ---
+        insert_query = """
+        INSERT INTO coop_appointments (datetime, owner_id, requestor_id)
+        VALUES (%s, %s, %s)
+        RETURNING id, created_at, datetime, owner_id, requestor_id;
+        """
+        insert_data = (new_datetime, owner_id, requestor_id)
+
+        # Execute the INSERT query and COMMIT
+        new_appointment_data = execute_db_query(insert_query, insert_data, commit=True)
+        
+        # The result from RETURNING is a tuple, map it to a dictionary for clarity
+        if new_appointment_data:
+            appointment_details = {
+                "id": new_appointment_data[0],
+                "created_at": str(new_appointment_data[1]),
+                "datetime": str(new_appointment_data[2]),
+                "owner_id": new_appointment_data[3],
+                "requestor_id": new_appointment_data[4],
+            }
+            return {
+                "message": "Appointment scheduled successfully (30-minute window confirmed clear).",
+                "appointment": appointment_details 
+            }, 201
+        else:
+            return {"error": "Insertion failed with no data returned."}, 500
+            
+    except Exception as e:
+        # If any query fails, rollback the transaction state (if it was mid-insert)
+        if db_connection:
+            db_connection.rollback()
+        # Log the error (e.g., print(e)) and return a generic server error
+        return {"error": f"An unexpected database error occurred: {e}"}, 500
+
 # Run the application
 if __name__ == '__main__':
     app.run()
