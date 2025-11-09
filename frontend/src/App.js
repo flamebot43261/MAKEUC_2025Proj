@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LoginPage from './components/LoginPage';
 import CreateAccountPage from './components/CreateAccountPage';
 import ClassSelectionPage from './components/ClassSelectionPage';
+import CourseDescriptionPage from './components/CourseDescriptionPage';
 import './App.css';
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/create-account" element={<CreateAccountPage />} />
         <Route path="/class-selection" element={<ClassSelectionPage />} />
+        <Route path="/course-description" element={<CourseDescriptionPage />} />
       </Routes>
     </Router>
   );
