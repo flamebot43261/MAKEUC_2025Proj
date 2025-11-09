@@ -8,11 +8,12 @@ function PageContainer({
   showProfile = false,
   maxWidth = 'md',
   backgroundColor = '#f5f5f5',
-  isAuthenticated = false
+  isAuthenticated = false,
+  userId
 }) {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor }}>
-      <Header variant={headerVariant} showProfile={showProfile} isAuthenticated={isAuthenticated} />
+      <Header variant={headerVariant} showProfile={showProfile} isAuthenticated={isAuthenticated} userId={userId} />
       <Container maxWidth={maxWidth}>
         {children}
       </Container>

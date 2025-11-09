@@ -44,3 +44,21 @@ export const getUser = async (userId) => {
 
   return response.json();
 };
+
+export const getAppointmentsByOwner = async (ownerId) => {
+  const response = await fetch(`${API_URL}/coop-appointments/owner/${ownerId}`);
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to fetch appointments');
+  }
+  return response.json();
+};
+
+export const getAppointmentsByRequestor = async (requestorId) => {
+  const response = await fetch(`${API_URL}/coop-appointments/requestor/${requestorId}`);
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to fetch appointments');
+  }
+  return response.json();
+};
