@@ -6,7 +6,8 @@ import StyledButton from './StyledButton';
 import { useNavigate } from 'react-router-dom';
 
 function CreateAccountPage() {
-  const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -14,7 +15,7 @@ function CreateAccountPage() {
 
   const handleCreateAccount = (e) => {
     e.preventDefault();
-    console.log('Account creation attempted with:', username, email, password);
+    console.log('Account creation attempted with:', firstName, lastName, email, password);
   };
 
   return (
@@ -25,13 +26,25 @@ function CreateAccountPage() {
             margin="normal"
             required
             fullWidth
-            id="username"
-            label="Username"
-            name="username"
-            autoComplete="username"
+            id="firstName"
+            label="First Name"
+            name="firstName"
+            autoComplete="given-name"
             autoFocus
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+          />
+
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="lastName"
+            label="Last Name"
+            name="lastName"
+            autoComplete="family-name"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
           />
 
           <TextField
@@ -41,6 +54,7 @@ function CreateAccountPage() {
             id="email"
             label="Email Address"
             name="email"
+            type="email"
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
