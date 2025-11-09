@@ -4,15 +4,24 @@ import PageContainer from './PageContainer';
 import FormCard from './FormCard';
 import StyledButton from './StyledButton';
 import { useNavigate } from 'react-router-dom';
+import { login } from '../services/api';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log('Login attempted with:', email, password);
+    try {
+      const data = await login(email, password);
+      console.log('Login successful:', data);
+      // TODO: Store user data/token in context or local storage
+      navigate('/my-profile');
+    } catch (error) {
+      console.error('Login failed:', error);
+      alert(error.message);
+    }
   };
 
   return (
