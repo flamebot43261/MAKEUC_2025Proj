@@ -384,6 +384,21 @@ def delete_coop_appointment(appointment_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# --- DATABASE EXECUTION HELPER FUNCTION (Replacing db_execute) ---
+def execute_db_query(query: str, params: tuple = None, commit: bool = False):
+    if not db_connection:
+        raise Exception("Database connection is not available.")
+    
+    # Use a 'with' block for the cursor to ensure it's closed automatically
+    with db_connection.cursor() as cur:
+        cur.execute(query, params)
+        
+        if commit:
+            db_connection.commit()
+            return cur.fetchone() # Return result of INSERT/UPDATE/DELETE RETURNING
+        else:
+            return cur.fetchall() # Return results of SELECT
+
 # --- CORE SCHEDULING LOGIC ---
 def schedule_appointment_with_duration_check(new_datetime_str: str, owner_id: int, requestor_id: int):
     new_datetime = new_datetime_str # e.g., '2026-01-20 14:30:00+00'
