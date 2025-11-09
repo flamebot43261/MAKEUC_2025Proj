@@ -11,16 +11,14 @@ import './App.css';
 function App() {
   return (
     <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/create-account" element={<CreateAccountPage />} />
-          <Route path="/my-profile" element={<MyProfilePage />} />
-          <Route path="/create-profile" element={<CreateProfile />} />
-          <Route path="/create-listing" element={<CreateAListing />} />
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/create-account" element={<CreateAccountPage />} />
+        <Route path="/users/:userId" element={<MyProfilePage />} />
+        <Route path="/create-profile" element={<CreateProfile />} />
+        <Route path="/create-listing" element={<CreateAListing />} />
+      </Routes>
     </Router>
   );
 }
